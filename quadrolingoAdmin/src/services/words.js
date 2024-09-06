@@ -20,8 +20,14 @@ const create = async newObject => {
   const config = {
     headers: { Authorization: token },
   }
-  const response = await axios.post(baseUrl, newObject, config)
-  return response.data
+
+  try {
+    const response = await axios.post(baseUrl, newObject, config)
+    return response.data
+  } catch (error) {
+    console.error('Error fetching words:', error)
+    throw error
+  }
 }
 
 const update = async newObject => {
