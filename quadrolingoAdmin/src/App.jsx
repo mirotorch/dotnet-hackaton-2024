@@ -9,7 +9,14 @@ const App = () => {
   const [newWord, setNewWord] = useState('')
   const [translations, setTranslations] = useState([{ text: '', lang: '' }]);
 
-  const languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese'];
+  const languages = [
+    { name: 'English', code: 'en' },
+    { name: 'Spanish', code: 'es' },
+    { name: 'French', code: 'fr' },
+    { name: 'German', code: 'de' },
+    { name: 'Chinese', code: 'zh' },
+    { name: 'Japanese', code: 'ja' }
+  ];
 
   useEffect(() => {
     wordsService.getAll().then(initialWords => {
@@ -33,10 +40,18 @@ const App = () => {
       return;
     }
 
+    // Group translations by their respective language code
+    const groupedTranslations = translations.reduce((acc, { lang, text }) => {
+      if (!text) return acc; // Skip empty translations
+      if (!acc[lang]) acc[lang] = [];
+      acc[lang].push(text);
+      return acc;
+    }, {});
+
     const wordToAdd = {
       base: newWord,
       lang: wordLang,
-      translations: translations.filter(t => t.text) // Only include non-empty translations
+      translations: groupedTranslations
     };
 
     console.log('created word', wordToAdd);
@@ -91,15 +106,15 @@ const App = () => {
         >
           <option value="">Select language</option>
           {languages.map(lang => (
-            <option key={lang} value={lang}>
-              {lang}
+            <option key={lang.code} value={lang.code}>
+              {lang.name}
             </option>
           ))}
         </select>
 
         <h3>Translations</h3>
         {translations.map((translation, index) => (
-          <div key={index} style={{ marginBottom: '10px' }}>
+          <div key={index}>
             <input
               type="text"
               value={translation.text}
@@ -112,8 +127,8 @@ const App = () => {
             >
               <option value="">Select language</option>
               {languages.map(lang => (
-                <option key={lang} value={lang}>
-                  {lang}
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
                 </option>
               ))}
             </select>
