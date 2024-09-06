@@ -1,0 +1,6 @@
+@QuadrolingoAPI_HostAddress = http://localhost:5046
+
+GET {{QuadrolingoAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
