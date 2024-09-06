@@ -1,4 +1,4 @@
-namespace QuadrolingoAPI
+namespace quadrolingoAPI
 {
     public class WeatherForecast
     {

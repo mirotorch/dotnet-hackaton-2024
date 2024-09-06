@@ -1,4 +1,7 @@
-namespace QuadrolingoAPI
+using quadrolingoAPI.Models;
+using Microsoft.EntityFrameworkCore; 
+
+namespace quadrolingoAPI
 {
     public class Program
     {
@@ -9,6 +12,7 @@ namespace QuadrolingoAPI
             // Add services to the container.
 
             builder.Services.AddControllers();
+            builder.Services.AddDbContext<APIContext>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("quadrolingoBaza")));
 
             var app = builder.Build();
 
