@@ -96,7 +96,7 @@ namespace quadrolingoBot
 
 		new public List<string> GetVariants(int count, string word, long userId)
 		{
-			return context.Words
+			var list =  context.Words
 				.FromSqlRaw(@"
 				SELECT TOP (@count) 
 					   JSON_VALUE(w.WORD_TRANSLATIONS, '$.@language') AS [Translation]
@@ -110,6 +110,9 @@ namespace quadrolingoBot
 				 new SqlParameter("@word", word))
 				 .Select(w => w.WORD_TRANSLATION)
 				 .ToList();
+			list.Add(word);
+			list.Shuffle();
+			return list;
 		}
 
 		new public int GetPageCount(long userId, int wordsPerPage) 

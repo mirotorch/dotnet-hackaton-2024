@@ -9,10 +9,10 @@ internal class Program
 	{
 		var configuration = new ConfigurationBuilder()
 		.SetBasePath(Directory.GetCurrentDirectory())
-		.AddUserSecrets<Program>()
+		.AddConfiguration(new ConfigurationBuilder().AddJsonFile("appsettings.json").Build())
 		.Build();
-		string token = configuration["ApiSettings.Token"];
-		string connectionString = configuration["ConnectionStrings.quadrolingoBaza"];
+		string token = configuration["ApiSettings:Token"];
+		string connectionString = configuration["ConnectionStrings:quadrolingoBaza"];
 
 		var optionsBuilder = new DbContextOptionsBuilder<BotContext>();
 		optionsBuilder.UseSqlServer(connectionString);
@@ -20,7 +20,7 @@ internal class Program
 		using (var context = new BotContext(optionsBuilder.Options))
 		{
 			context.Database.EnsureCreated();
-			var manager = new DbManagerRelease(context); // new DbManager();
+			var manager = new DbManagerRelease(context);
 			QuadrolingoBot bot = new QuadrolingoBot(token, manager);
 
 			while (true)

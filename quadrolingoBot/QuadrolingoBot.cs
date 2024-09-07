@@ -10,7 +10,8 @@ namespace quadrolingoBot;
 
 internal class QuadrolingoBot
 {
-	const int WordsPerPage = 10;
+	const int WordsPerPage = 5;
+	const int WordsToLearn = 7;
 
 	private TelegramBotClient bot;
 	private DbManager dbManager;
@@ -128,14 +129,18 @@ internal class QuadrolingoBot
 		if (!wordsBuffer.TryGetValue(query.Message.Chat.Id, out WordCollection words))
 		{
 			// user wants to start exercise without learning new words
-			words = new WordExerciseCollection(dbManager.GetLearnedWords(WordsPerPage));
+			words = new WordExerciseCollection(dbManager.GetLearnedWords(WordsToLearn));
 			wordsBuffer.Add(query.Message.Chat.Id, words);
 		}
 		else
 		{
-			// add some learned words to repeat them
+			// add some learned words to repeat them 
+			/*
 			var learnedWords = dbManager.GetLearnedWords(2);
 			wordsBuffer[query.Message.Chat.Id] = new WordExerciseCollection(learnedWords.Concat(words.list).ToList());
+			*/
+			words = new WordExerciseCollection(words.list);
+			wordsBuffer[query.Message.Chat.Id] = words;
 		}
 		await AskAQuestionAsync(query.Message.Chat.Id, query.From.Id);
 	}
@@ -145,7 +150,7 @@ internal class QuadrolingoBot
 		if (wordsBuffer.TryGetValue(chatId, out WordCollection words))
 		{
 			var word = words[words.Current];
-			var variants = dbManager.GetVariants(2, word.Translation, userId).Append(word.Translation).ToArray();
+			var variants = dbManager.GetVariants(2, word.Translation, userId).ToArray();
 			var wordOrder = words.Current == 0 ? "first" : words.Current == words.Count ? "last" : "next";
 			string text = $"🔤 The {wordOrder} word is {word.GetToGuess()}.\nSelect the translation option or write it manually.";
 
@@ -164,7 +169,7 @@ internal class QuadrolingoBot
 
 	async Task StartLearningWordsAsync(CallbackQuery query)
 	{
-		WordCollection wordCollection = new(dbManager.GetNewWords(WordsPerPage));
+		WordCollection wordCollection = new(dbManager.GetNewWords(WordsToLearn));
 		wordsBuffer.Add(query.Message.Chat.Id, wordCollection);
 		var message = await bot.SendTextMessageAsync(query.Message.Chat.Id, wordCollection[0].GetToLearn(), replyMarkup: GetMemorizingMarkup(MarkupArrows.Next));
 		wordCollection.MessageId = message.MessageId;

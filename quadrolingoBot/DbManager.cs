@@ -1,25 +1,27 @@
 ﻿using System.Data.Common;
 using System.Data.SQLite;
+using Microsoft.Identity.Client;
 using quadrolingoBot.BotModels;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace quadrolingoBot
 {
-    internal class DbManager
+	internal class DbManager
 	{
 
-		public DbManager() 
+		public DbManager()
 		{
 
 		}
 
 		public InlineKeyboardButton[] GetLanguageButtons()
 		{
-			return new InlineKeyboardButton[] 
+			return new InlineKeyboardButton[]
 			{
-				InlineKeyboardButton.WithCallbackData("🏳️‍🌈Russian", "lang_ru"),
 				InlineKeyboardButton.WithCallbackData("🇺🇸🇬🇧English", "lang_en"),
 				InlineKeyboardButton.WithCallbackData("🇩🇪German", "lang_de"),
+				InlineKeyboardButton.WithCallbackData("🇺🇦Ukrainian", "lang_ua"),
+				InlineKeyboardButton.WithCallbackData("🏳️‍🌈Russian", "lang_ru"),
 			};
 		}
 
@@ -27,27 +29,51 @@ namespace quadrolingoBot
 		{
 			return new List<WordModel>
 			{
-				new WordModel { Word = "apple", Translation = "яблоко", Correct = false },
+				new WordModel { Word = "apple", Translation = "яблуко", Correct = false },
 				new WordModel { Word = "banana", Translation = "банан", Correct = false },
 				new WordModel { Word = "cherry", Translation = "вишня", Correct = false },
 				new WordModel { Word = "grape", Translation = "виноград", Correct = false },
+				new WordModel { Word = "lemon", Translation = "лимон", Correct = false },
+				//------------------------------------------------------------------------
+				new WordModel { Word = "orange", Translation = "апельсин", Correct = false },
+				new WordModel { Word = "peach", Translation = "персик", Correct = false },
 			};
 		}
 
 		public List<WordModel> GetLearnedWords(int count, int startFrom = -1) // -1 means random
 		{
-			if (startFrom > 0)
+			if (startFrom >= 0)
 			{
-				return new List<WordModel>
+				if (startFrom == 0)
 				{
-					new WordModel { Word = "apple", Translation = "яблоко", Correct = true },
-					new WordModel { Word = "banana", Translation = "банан", Correct = true },
-				};
+					return new List<WordModel>
+					{
+						new WordModel { Word = "apple", Translation = "яблуко", Correct = false },
+						new WordModel { Word = "banana", Translation = "банан", Correct = false },
+						new WordModel { Word = "cherry", Translation = "вишня", Correct = false },
+						new WordModel { Word = "grape", Translation = "виноград", Correct = false },
+						new WordModel { Word = "lemon", Translation = "лимон", Correct = false },
+					};
+				}
+				if (startFrom > 0)
+				{
+					return new List<WordModel>
+					{
+						new WordModel { Word = "orange", Translation = "апельсин", Correct = false },
+						new WordModel { Word = "peach", Translation = "персик", Correct = false },
+					};
+				}
 			}
 			return new List<WordModel>
 			{
-				new WordModel { Word = "elephant", Translation = "слон", Correct = false },
-				new WordModel { Word = "water", Translation = "вода", Correct = false },
+				new WordModel { Word = "apple", Translation = "яблуко", Correct = false },
+				new WordModel { Word = "banana", Translation = "банан", Correct = false },
+				new WordModel { Word = "cherry", Translation = "вишня", Correct = false },
+				new WordModel { Word = "grape", Translation = "виноград", Correct = false },
+				new WordModel { Word = "lemon", Translation = "лимон", Correct = false },
+				//------------------------------------------------------------------------
+				new WordModel { Word = "orange", Translation = "апельсин", Correct = false },
+				new WordModel { Word = "peach", Translation = "персик", Correct = false },
 			};
 		}
 
@@ -58,14 +84,18 @@ namespace quadrolingoBot
 
 		public List<string> GetVariants(int count, string word, long userId)
 		{
-			return ["слон", "вода"];
+			List<string> variants = [ "яблуко", "банан", "вишня", "виноград", "слон", "вода" ];
+			variants.Shuffle();
+			var shuffled = variants.Take(2).ToList().Append(word).ToList();
+			shuffled.Shuffle();
+			return shuffled;
 		}
 
-		public int GetPageCount(long userId, int wordsPerPage) { return 4; }
+		public int GetPageCount(long userId, int wordsPerPage) { return 2; }
 
 		public int GetWordCount(long userId)
 		{
-			return 4;
+			return 7;
 		}
 
 		/// <summary>
@@ -86,10 +116,18 @@ namespace quadrolingoBot
 			//	}
 			//}
 		}
-
+		static bool a = false;
 		public double GetAverageCorrectness(long userId)
 		{
-			return 0.5;
+			if (a == false)
+			{
+				a = true;
+				return -1;
+			}
+			else
+			{
+				return 0.5;
+			}
 		}
 
 		public void AddUser(UserModel user)
