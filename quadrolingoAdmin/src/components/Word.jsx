@@ -3,9 +3,9 @@ const Word = ({ word, wordLang, updateWord, deleteWord }) => {
     <div>
       <p>
         {word} ({wordLang})
-      </p>
-      <button onClick={() => updateWord(word)}>Update Word</button>
-      <button onClick={() => deleteWord(word)}>Delete Word</button>
+        <button onClick={() => updateWord(word)}>Update Word</button>
+        <button onClick={() => deleteWord(word)}>Delete Word</button>
+      </p>      
     </div>
   );
 };
