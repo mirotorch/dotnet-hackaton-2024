@@ -1,4 +1,6 @@
-﻿using Telegram.Bot;
+﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Text;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -7,16 +9,20 @@ namespace quadrolingoBot;
 
 internal class QuadrolingoBot
 {
+	const int WordsPerPage = 10;
+
 	private TelegramBotClient bot;
 	private DbManager dbManager;
 	private Dictionary<long, UserModel> userBuffer;
 	private Dictionary<long, WordCollection> wordsBuffer;
+	private Dictionary<long, Paging> wordPage;
 
 	public QuadrolingoBot(string token, DbManager dbManager)
 	{
 		this.dbManager = dbManager;
 		userBuffer = new Dictionary<long, UserModel>();
 		wordsBuffer = new Dictionary<long, WordCollection>();
+		wordPage = new Dictionary<long, Paging>();
 		bot = new TelegramBotClient(token);
 		bot.OnUpdate += OnUpdate;
 		bot.OnMessage += OnMessage;
@@ -73,7 +79,9 @@ internal class QuadrolingoBot
 						double averageCorrectness = dbManager.GetAverageCorrectness(msg.From.Id);
 						string toAverage = GetAverageComparison(correct, wec.Count, averageCorrectness);
 						await bot.SendTextMessageAsync(msg.Chat.Id, result + toAverage, replyMarkup: new ReplyKeyboardRemove());
+						dbManager.SaveExerciseResults(msg.From.Id, wec);
 						wordsBuffer.Remove(msg.Chat.Id, out _);
+						await ShowMenuAsync(msg.Chat.Id, msg.From.Id);
 					}
 				}
 			}
@@ -90,8 +98,67 @@ internal class QuadrolingoBot
 		double difference = userCorrectness - averageCorrectness;
 		string comparison = difference > 0 ? "better" : "worse";
 		double percentage = Math.Abs(difference) * 100;
-		return $" Your result is {percentage}% {comparison} than your average.";
+		return $" Your result is {(int)percentage}% {comparison} than your average.";
 	}
+
+	async Task StartExerciseAsync(CallbackQuery query)
+	{
+		await bot.SendTextMessageAsync(query.Message.Chat.Id, MessageConsts.StartExerciseMessage);
+		if (!wordsBuffer.TryGetValue(query.Message.Chat.Id, out WordCollection words))
+		{
+			// user wants to start exercise without learning new words
+			words = new WordExerciseCollection(dbManager.GetLearnedWords(10));
+			wordsBuffer.Add(query.Message.Chat.Id, words);
+		}
+		else
+		{
+			// add some learned words to repeat them
+			var learnedWords = dbManager.GetLearnedWords(5);
+			wordsBuffer[query.Message.Chat.Id] = new WordExerciseCollection(learnedWords.Concat(words.list).ToList());
+		}
+		await AskAQuestionAsync(query.Message.Chat.Id, query.From.Id);
+	}
+
+	async Task AskAQuestionAsync(long chatId, long userId)
+	{
+		if (wordsBuffer.TryGetValue(chatId, out WordCollection words))
+		{
+			var word = words[words.Current];
+			var variants = dbManager.GetVariants(2, word.Translation, userId).Append(word.Translation).ToArray();
+			await bot.SendTextMessageAsync(chatId, word.GetToGuess(), replyMarkup: GetExerciseMarkup(variants), parseMode: ParseMode.Html);
+		}
+	}
+
+	async Task ShowMenuAsync(long chatId, long userId, int messageId = 0)
+	{
+		int wordCount = dbManager.GetWordCount(userId);
+		if (messageId == 0)
+			await bot.SendTextMessageAsync(chatId, string.Format(MessageConsts.MenuMessage, wordCount), replyMarkup: GetMenuMarkup());
+		else
+			await bot.EditMessageTextAsync(chatId, messageId, string.Format(MessageConsts.MenuMessage, wordCount), replyMarkup: GetMenuMarkup());
+	}
+
+	async Task StartLearningWordsAsync(CallbackQuery query)
+	{
+		WordCollection wordCollection = new(dbManager.GetNewWords());
+		wordsBuffer.Add(query.Message.Chat.Id, wordCollection);
+		var message = await bot.SendTextMessageAsync(query.Message.Chat.Id, wordCollection[0].GetToLearn(), replyMarkup: GetMemorizingMarkup(MarkupArrows.Next));
+		wordCollection.MessageId = message.MessageId;
+	}
+
+	async Task ShowWordsAsync(CallbackQuery query)
+	{
+		if (!wordPage.TryGetValue(query.Message.Chat.Id, out Paging page))
+		{
+			page = new Paging(0, dbManager.GetPageCount(query.From.Id, WordsPerPage), query.Message.MessageId);
+			wordPage.Add(query.Message.Chat.Id, page);
+		}
+		var words = dbManager.GetLearnedWords(WordsPerPage, WordsPerPage * page.CurrentPage);
+		var text = new StringBuilder();
+		text.AppendJoin(Environment.NewLine + Environment.NewLine, words.Select(w => w.GetToLearn()));
+		await bot.EditMessageTextAsync(query.Message.Chat.Id, page.MessageId, text.ToString(), replyMarkup: GetWordListMarkup(page));
+	}
+
 	async Task ProcessCallbackAsync(CallbackQuery query)
 	{
 		if (query.Data.StartsWith(MessageConsts.CallbackPrefixLanguage))
@@ -124,32 +191,93 @@ internal class QuadrolingoBot
 			await StartExerciseAsync(query);
 			await bot.AnswerCallbackQueryAsync(query.Id);
 		}
+		else if (query.Data == "learn_words")
+		{
+			await bot.SendTextMessageAsync(query.Message.Chat.Id, MessageConsts.NewWordSetMessage);
+			await StartLearningWordsAsync(query);
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "show_words")
+		{
+			await ShowWordsAsync(query);
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "page_prev")
+		{
+			var page = wordPage[query.Message.Chat.Id];
+			if (page.CurrentPage > 0)
+			{
+				page.CurrentPage--;
+				await ShowWordsAsync(query);
+			}
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "page_next")
+		{
+			var page = wordPage[query.Message.Chat.Id];
+			if (page.CurrentPage < page.PageCount)
+			{
+				page.CurrentPage++;
+				await ShowWordsAsync(query);
+			}
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "paging")
+		{
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "start_excercise")
+		{
+			await StartExerciseAsync(query);
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "learn_words")
+		{
+			await bot.SendTextMessageAsync(query.Message.Chat.Id, MessageConsts.NewWordSetMessage);
+			await StartLearningWordsAsync(query);
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "show_words")
+		{
+			await ShowWordsAsync(query);
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "page_prev")
+		{
+			var page = wordPage[query.Message.Chat.Id];
+			if (page.CurrentPage > 0)
+			{
+				page.CurrentPage--;
+				await ShowWordsAsync(query);
+			}
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "page_next")
+		{
+			var page = wordPage[query.Message.Chat.Id];
+			if (page.CurrentPage < page.PageCount)
+			{
+				page.CurrentPage++;
+				await ShowWordsAsync(query);
+			}
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "paging")
+		{
+			await bot.AnswerCallbackQueryAsync(query.Id);
+		}
+		else if (query.Data == "show_menu")
+		{
+			await bot.AnswerCallbackQueryAsync(query.Id);
+			await ShowMenuAsync(query.Message.Chat.Id, query.From.Id, query.Message.MessageId);
+			wordPage.Remove(query.Message.Chat.Id, out _);
+		}
 		else
 		{
 			await bot.AnswerCallbackQueryAsync(query.Id);
 		}
 	}
 
-	async Task StartExerciseAsync(CallbackQuery query)
-	{
-		if (wordsBuffer.TryGetValue(query.Message.Chat.Id, out WordCollection words))
-		{
-			await bot.SendTextMessageAsync(query.Message.Chat.Id, MessageConsts.StartExerciseMessage);
-			var learnedWords = dbManager.GetLearnedWords(5);
-			wordsBuffer[query.Message.Chat.Id] = new WordExerciseCollection(learnedWords.Concat(words.list).ToList());
-			await AskAQuestionAsync(query.Message.Chat.Id, query.From.Id);
-		}
-	}
-
-	async Task AskAQuestionAsync(long chatId, long userId)
-	{
-		if (wordsBuffer.TryGetValue(chatId, out WordCollection words))
-		{
-			var word = words[words.Current];
-			var variants = dbManager.GetVariants(2, word.Translation, userId).Append(word.Translation).ToArray();
-			await bot.SendTextMessageAsync(chatId, word.GetToGuess(), replyMarkup: new ReplyKeyboardMarkup(GetVariantButtons(variants)), parseMode: ParseMode.Html);
-		}
-	}
 
 	async Task ProcessLanguageAsync(CallbackQuery query)
 	{
@@ -167,10 +295,7 @@ internal class QuadrolingoBot
 				dbManager.AddUser(user);
 				userBuffer.Remove(query.Message.Chat.Id, out _);
 				await bot.SendTextMessageAsync(query.Message.Chat.Id, MessageConsts.InitialWordSetMessage);
-				WordCollection wordCollection = new(dbManager.GetNewWords());
-				wordsBuffer.Add(query.Message.Chat.Id, wordCollection);
-				var message = await bot.SendTextMessageAsync(query.Message.Chat.Id, wordCollection[0].GetToLearn(), replyMarkup: GetMemorizingMarkup(MarkupArrows.Next));
-				wordCollection.MessageId = message.MessageId;
+;				await StartLearningWordsAsync(query);
 			}
 		}
 	}
@@ -185,11 +310,30 @@ internal class QuadrolingoBot
 		await bot.EditMessageTextAsync(ChatId, words.MessageId, words[words.Current].GetToLearn(), replyMarkup: GetMemorizingMarkup(arrows));
 	}
 
-	List<KeyboardButton> GetVariantButtons(string[] words)
+	ReplyKeyboardMarkup GetExerciseMarkup(string[] words)
 	{
 		List<KeyboardButton> buttons = [.. words.Select(w => new KeyboardButton(w))];
 		buttons.Shuffle();
-		return buttons;
+		return new ReplyKeyboardMarkup(buttons);
+	}
+
+	InlineKeyboardMarkup GetMenuMarkup()
+	{
+		return new InlineKeyboardMarkup(new[]
+		{
+			new []
+			{
+				InlineKeyboardButton.WithCallbackData("Learn new words", "learn_words"),
+			},
+			new []
+			{
+				InlineKeyboardButton.WithCallbackData("Start excercise", "start_excercise"),
+			},
+			new []
+			{
+				InlineKeyboardButton.WithCallbackData("Show known words", "show_words"),
+			},
+		});
 	}
 
 	InlineKeyboardMarkup GetMemorizingMarkup(MarkupArrows arrows)
@@ -240,10 +384,68 @@ internal class QuadrolingoBot
 		};
 	}
 
+	InlineKeyboardMarkup GetWordListMarkup(Paging paging)
+	{
+		InlineKeyboardButton[] firstRow;
+		if (paging.CurrentPage == paging.PageCount - 1)
+		{
+			firstRow = new[]
+			{
+					InlineKeyboardButton.WithCallbackData("⬅️", "page_prev"),
+					InlineKeyboardButton.WithCallbackData(paging.ToString(), "paging"),
+			};
+		}
+		else if (paging.CurrentPage == 0)
+		{
+
+			firstRow = new[]
+			{
+					InlineKeyboardButton.WithCallbackData(paging.ToString(), "paging"),
+					InlineKeyboardButton.WithCallbackData("➡️", "page_next"),
+			};
+		}
+		else
+		{
+			firstRow = new[]
+{
+					InlineKeyboardButton.WithCallbackData("⬅️", "page_prev"),
+					InlineKeyboardButton.WithCallbackData(paging.ToString(), "paging"),
+					InlineKeyboardButton.WithCallbackData("➡️", "page_next"),
+			};
+		}
+		return new InlineKeyboardMarkup(new[]
+		{
+			firstRow,
+			new []
+			{
+				InlineKeyboardButton.WithCallbackData("Back to menu", "show_menu"),
+			},
+		});
+	}
+
 	private enum MarkupArrows
 	{
 		Prev,
 		Next,
 		PrevNext
+	}
+
+	private class Paging
+	{
+		public Paging(int currentPage, int pageCount, int messageId)
+		{
+			CurrentPage = currentPage;
+			PageCount = pageCount;
+			MessageId = messageId;
+		}
+
+		public int CurrentPage { get; set; }
+		public int PageCount { get; set; }
+		public int MessageId { get; set; } = 0;
+
+		public override string ToString()
+		{
+			return $"{CurrentPage + 1}/{PageCount}";
+		}
 	}
 }
