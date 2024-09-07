@@ -1,10 +1,11 @@
 ﻿using System.Data.Common;
 using System.Data.SQLite;
+using quadrolingoBot.BotModels;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace quadrolingoBot
 {
-	internal class DbManager
+    internal class DbManager
 	{
 
 		public DbManager() 
@@ -22,7 +23,7 @@ namespace quadrolingoBot
 			};
 		}
 
-		public List<WordModel> GetNewWords()
+		public List<WordModel> GetNewWords(int count)
 		{
 			return new List<WordModel>
 			{
