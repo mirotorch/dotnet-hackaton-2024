@@ -14,12 +14,12 @@ internal class QuadrolingoBot
 	const int WordsToLearn = 7;
 
 	private TelegramBotClient bot;
-	private DbManager dbManager;
+	private DbManagerRelease dbManager;
 	private Dictionary<long, UserModel> userBuffer;
 	private Dictionary<long, WordCollection> wordsBuffer;
 	private Dictionary<long, Paging> wordPage;
 
-	public QuadrolingoBot(string token, DbManager dbManager)
+	public QuadrolingoBot(string token, DbManagerRelease dbManager)
 	{
 		this.dbManager = dbManager;
 		userBuffer = new Dictionary<long, UserModel>();
@@ -129,7 +129,7 @@ internal class QuadrolingoBot
 		if (!wordsBuffer.TryGetValue(query.Message.Chat.Id, out WordCollection words))
 		{
 			// user wants to start exercise without learning new words
-			words = new WordExerciseCollection(dbManager.GetLearnedWords(WordsToLearn));
+			words = new WordExerciseCollection(dbManager.GetLearnedWords(WordsToLearn, query.From.Id));
 			wordsBuffer.Add(query.Message.Chat.Id, words);
 		}
 		else
@@ -169,7 +169,7 @@ internal class QuadrolingoBot
 
 	async Task StartLearningWordsAsync(CallbackQuery query)
 	{
-		WordCollection wordCollection = new(dbManager.GetNewWords(WordsToLearn));
+		WordCollection wordCollection = new(dbManager.GetNewWords(WordsToLearn, query.From.Id));
 		wordsBuffer.Add(query.Message.Chat.Id, wordCollection);
 		var message = await bot.SendTextMessageAsync(query.Message.Chat.Id, wordCollection[0].GetToLearn(), replyMarkup: GetMemorizingMarkup(MarkupArrows.Next));
 		wordCollection.MessageId = message.MessageId;
@@ -182,7 +182,7 @@ internal class QuadrolingoBot
 			page = new Paging(0, dbManager.GetPageCount(query.From.Id, WordsPerPage), query.Message.MessageId);
 			wordPage.Add(query.Message.Chat.Id, page);
 		}
-		var words = dbManager.GetLearnedWords(WordsPerPage, WordsPerPage * page.CurrentPage);
+		var words = dbManager.GetLearnedWords(WordsPerPage, query.From.Id, WordsPerPage * page.CurrentPage);
 		var text = new StringBuilder();
 		text.AppendJoin(Environment.NewLine + Environment.NewLine, words.Select(w => w.GetToLearn()));
 		await bot.EditMessageTextAsync(query.Message.Chat.Id, page.MessageId, text.ToString(), replyMarkup: GetWordListMarkup(page));

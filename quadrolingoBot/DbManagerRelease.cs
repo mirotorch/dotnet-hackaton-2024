@@ -8,7 +8,7 @@ using quadrolingoBot.BotModels;
 
 namespace quadrolingoBot
 {
-    internal class DbManagerRelease : DbManager
+    internal class DbManagerRelease
 	{
 		private BotContext context;
 
@@ -17,7 +17,7 @@ namespace quadrolingoBot
 			this.context = context;
 		}
 
-		new public InlineKeyboardButton[] GetLanguageButtons()
+		public InlineKeyboardButton[] GetLanguageButtons()
 		{
 			List<InlineKeyboardButton> buttons = new List<InlineKeyboardButton>();
 			foreach (var language in context.Languages)
@@ -28,7 +28,7 @@ namespace quadrolingoBot
 			return buttons.ToArray();
 		}
 
-		new public List<WordModel> GetNewWords(int count, long userId)
+		public List<WordModel> GetNewWords(int count, long userId)
 		{
 			string language = context.Users.Find(userId).BASE_LANG;
 			var query = context.Words
@@ -50,7 +50,7 @@ namespace quadrolingoBot
 		}
 		
 
-		new public List<WordModel> GetLearnedWords(int count, int userId, int startFrom = -1) // -1 means random
+		public List<WordModel> GetLearnedWords(int count, long userId, int startFrom = -1) // -1 means random
 		{
 			
 			if (startFrom > 0)
@@ -89,12 +89,12 @@ namespace quadrolingoBot
 			}
 		}
 
-		new public bool UserExists(long userId)
+		public bool UserExists(long userId)
 		{
 			return context.Users.Any(u => u.TELEGRAM_ID == userId);
 		}
 
-		new public List<string> GetVariants(int count, string word, long userId)
+		public List<string> GetVariants(int count, string word, long userId)
 		{
 			var list =  context.Words
 				.FromSqlRaw(@"
@@ -115,17 +115,17 @@ namespace quadrolingoBot
 			return list;
 		}
 
-		new public int GetPageCount(long userId, int wordsPerPage) 
+		public int GetPageCount(long userId, int wordsPerPage) 
 		{
 			return context.UserWords.Where(uw => uw.USER_ID.TELEGRAM_ID == userId).Count() / wordsPerPage;
 		}
 
-		new public int GetWordCount(long userId)
+		public int GetWordCount(long userId)
 		{
 			return context.UserWords.Where(uw => uw.USER_ID.TELEGRAM_ID == userId).Count();
 		}
 
-		new public double GetAverageCorrectness(long userId)
+		public double GetAverageCorrectness(long userId)
 		{
 			var exercises = context.WordExercises
 				.Join(context.Exercises,
@@ -147,7 +147,7 @@ namespace quadrolingoBot
 		/// <summary>
 		/// We update both UserWord and WordExercise here to avoid complications with word repetition in <see cref="GetLearnedWords(int)"/>
 		/// </summary>
-		new public void SaveExerciseResults(long userId, WordExerciseCollection words)
+		public void SaveExerciseResults(long userId, WordExerciseCollection words)
 		{
 
 			Exercise ex = new Exercise
@@ -187,7 +187,7 @@ namespace quadrolingoBot
 			context.SaveChanges();
 		}
 
-		new public void AddUser(UserModel user)
+		public void AddUser(UserModel user)
 		{
 			User dbUser = new User
 			{
