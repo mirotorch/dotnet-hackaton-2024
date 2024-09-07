@@ -19,9 +19,14 @@ namespace quadrolingoAPI.Controllers
     public class WordsController : ControllerBase
     {
         private readonly APIContext _context;
+        private HttpClient _httpClient;
 
         public WordsController(APIContext context)
         {
+            _httpClient = new HttpClient()
+            {
+                BaseAddress = new Uri("https://api.mymemory.translated.net/"),
+            };
             _context = context;
         }
 
@@ -119,51 +124,80 @@ namespace quadrolingoAPI.Controllers
             {
                 return NoContent();
             }
-            _context.Words.Add(word);
-
-            var translations = JsonSerializer.Deserialize<Dictionary<string, string[]>>(word.WORD_TRANSLATION);
-
-            foreach (var item in translations)
+            Dictionary<string, string[]> translations;
+            if (word.WORD_TRANSLATION != "")
             {
-                var lang = await _context.Languages.FindAsync(item.Key);
-                var words = await _context.Words.ToListAsync();
-                if (lang == null)
-                {
-                    //This should never happen
-                    return BadRequest();
-                }
-                foreach (var translation in item.Value)
-                {
-                    //_context.Languages.Add(lang);
-                    var translated = from w in _context.Words
-                                     where w.WORD_BASE == translation
-                                     select w;
-                    if (translated.Any())
-                    {
-                        var w = translated.FirstOrDefault();
-                        var trs = JsonSerializer.Deserialize<Dictionary<string, string[]>>(w.WORD_TRANSLATION);
-                        if (trs.ContainsKey(word.WORD_LANG))
-                        {
-                            
-                           if (!trs[word.WORD_LANG].Contains(word.WORD_BASE)) trs[word.WORD_LANG].Append(word.WORD_BASE);
-                        } else
-                        {
-                            trs.Add(word.WORD_LANG, [word.WORD_BASE]);
-                        }
-                        w.WORD_TRANSLATION = trs.ToJson();
+                translations = JsonSerializer.Deserialize<Dictionary<string, string[]>>(word.WORD_TRANSLATION);
 
-                    }
-                    else
+                foreach (var item in translations)
+                {
+                    var lang = await _context.Languages.FindAsync(item.Key);
+                    var words = await _context.Words.ToListAsync();
+                    if (lang == null)
                     {
-                        Word s = new Word();
-                        s.WORD_LANG = item.Key;
-                        s.WORD_TRANSLATION = "{\"" + word.WORD_LANG + "\": [\"" + word.WORD_BASE + "\"" + "]" + "}";
-                        s.WORD_BASE = translation;
-                        await _context.Words.AddAsync(s);
+                        //This should never happen
+                        return BadRequest();
+                    }
+                    foreach (var translation in item.Value)
+                    {
+                        //_context.Languages.Add(lang);
+                        var translated = from w in _context.Words
+                                         where w.WORD_BASE == translation
+                                         select w;
+                        if (translated.Any())
+                        {
+                            var w = translated.FirstOrDefault();
+                            var trs = JsonSerializer.Deserialize<Dictionary<string, string[]>>(w.WORD_TRANSLATION);
+                            if (trs.ContainsKey(word.WORD_LANG))
+                            {
+
+                                if (!trs[word.WORD_LANG].Contains(word.WORD_BASE)) trs[word.WORD_LANG].Append(word.WORD_BASE);
+                            }
+                            else
+                            {
+                                trs.Add(word.WORD_LANG, [word.WORD_BASE]);
+                            }
+                            w.WORD_TRANSLATION = trs.ToJson();
+
+                        }
+                        else
+                        {
+                            Word s = new Word();
+                            s.WORD_LANG = item.Key;
+                            s.WORD_TRANSLATION = "{\"" + word.WORD_LANG + "\": [\"" + word.WORD_BASE + "\"" + "]" + "}";
+                            s.WORD_BASE = translation;
+                            await _context.Words.AddAsync(s);
+                        }
                     }
                 }
+            } else
+            {
+                translations = new Dictionary<string, string[]>();
             }
 
+            var llist = await _context.Languages.ToListAsync();
+
+            var languages = from l in llist
+                            where !translations.ContainsKey(l.LANG_CODE) && l.LANG_CODE != word.WORD_LANG
+                            select l;
+            foreach (var language in languages)
+            {
+                var response = await _httpClient.GetAsync("get?q=" + word.WORD_BASE + "&langpair=" + word.WORD_LANG + "|" + language.LANG_CODE);
+                if (response != null)
+                {
+                    var e = await response.Content.ReadAsStringAsync();
+                    var res = JsonDocument.Parse(e);
+                    string translatedText = res.RootElement
+                                   .GetProperty("responseData")
+                                   .GetProperty("translatedText")
+                                   .GetString();
+                    translations.Add(language.LANG_CODE, [translatedText]);
+                }
+
+            }
+
+            word.WORD_TRANSLATION = translations.ToJson();
+            _context.Words.Add(word);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetWord), new { id = word.Id }, word);
         }
