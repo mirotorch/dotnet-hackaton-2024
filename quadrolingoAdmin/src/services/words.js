@@ -2,7 +2,7 @@ import axios from 'axios'
 
 import { fromBackend, toBackend } from '../utils/wordMapper';
 
-const baseUrl = 'http://localhost:3001/words';
+const baseUrl = 'http://localhost:5214/words';
 
 let token = null
 const setToken = newToken => {
@@ -26,6 +26,7 @@ const create = async newObject => {
 
   try {
     const response = await axios.post(baseUrl, toBackend(newObject), config)
+    console.log('inserted data', response.data)
     return fromBackend(response.data)
   } catch (error) {
     console.error('Error creating a word:', error)
@@ -40,8 +41,9 @@ const update = async newObject => {
   const url = `${baseUrl}/${newObject.id}`
   console.log('request url:', url)
   try {
+    console.log(toBackend(newObject))
     const response = await axios.put(url, toBackend(newObject), config)
-    return fromBackend(response.data)
+    return response.data
   } catch (error) {
     console.error('Error updating a word', error)
     throw error

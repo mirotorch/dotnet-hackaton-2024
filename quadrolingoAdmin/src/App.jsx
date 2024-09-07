@@ -22,6 +22,7 @@ const App = () => {
   // Fetch languages from the API
   useEffect(() => {
     languagesService.getAll().then(initialLanguages => {
+      console.log('initialLanguages:', initialLanguages);
       setLanguages(initialLanguages);
     });
   }, []);
