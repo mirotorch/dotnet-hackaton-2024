@@ -26,7 +26,6 @@ namespace quadrolingoAPI.Controllers
         }
 
         // GET: api/Words
-        [EnableCors]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Word>>> GetWords(string? base_lang, string? order, string? contains, string? startswith)
         {
@@ -73,7 +72,6 @@ namespace quadrolingoAPI.Controllers
         }
 
         // GET: api/Words/5
-        [EnableCors]
         [HttpGet("{id}")]
         public async Task<ActionResult<Word>> GetWord(int id)
         {
@@ -87,7 +85,6 @@ namespace quadrolingoAPI.Controllers
             return word;
         }
 
-        [EnableCors]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutWord(int id, Word word)
         {
@@ -112,7 +109,6 @@ namespace quadrolingoAPI.Controllers
 
         // POST: api/Words
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [EnableCors]
         [HttpPost]
         public async Task<ActionResult<Word>> PostWord(Word word)
         {
@@ -174,7 +170,6 @@ namespace quadrolingoAPI.Controllers
         }
 
         // DELETE: api/Words/5
-        [EnableCors]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWord(int id)
         {
