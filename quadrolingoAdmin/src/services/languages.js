@@ -34,18 +34,4 @@ const create = async (newObject) => {
   }
 };
 
-// Delete a language entry by ID
-const remove = async (id) => {
-  const config = {
-    headers: { Authorization: token },
-  };
-  try {
-    const response = await axios.delete(`${baseUrl}/${id}`, config);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting the language:', error); 
-    throw error;
-  }
-};
-
-export default { setToken, getAll, create, remove };
+export default { setToken, getAll, create };
