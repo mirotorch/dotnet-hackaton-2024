@@ -40,7 +40,7 @@ namespace quadrolingoAPI.Migrations
 
                     b.HasIndex("USER_IDId");
 
-                    b.ToTable("Exercises", (string)null);
+                    b.ToTable("Exercises");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.Language", b =>
@@ -54,7 +54,7 @@ namespace quadrolingoAPI.Migrations
 
                     b.HasKey("LANG_CODE");
 
-                    b.ToTable("Languages", (string)null);
+                    b.ToTable("Languages");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.User", b =>
@@ -65,8 +65,9 @@ namespace quadrolingoAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("BASE_LANGLANG_CODE")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("BASE_LANG")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("CHAT_ID")
                         .HasColumnType("bigint");
@@ -78,8 +79,9 @@ namespace quadrolingoAPI.Migrations
                     b.Property<string>("LAST_NAME")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("STUDY_LANGLANG_CODE")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("STUDY_LANG")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("TELEGRAM_ID")
                         .HasColumnType("bigint");
@@ -90,11 +92,7 @@ namespace quadrolingoAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BASE_LANGLANG_CODE");
-
-                    b.HasIndex("STUDY_LANGLANG_CODE");
-
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.UserWord", b =>
@@ -120,7 +118,7 @@ namespace quadrolingoAPI.Migrations
 
                     b.HasIndex("WORD_IDId");
 
-                    b.ToTable("UserWords", (string)null);
+                    b.ToTable("UserWords");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.Word", b =>
@@ -145,7 +143,7 @@ namespace quadrolingoAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Words", (string)null);
+                    b.ToTable("Words");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.WordExercise", b =>
@@ -171,7 +169,7 @@ namespace quadrolingoAPI.Migrations
 
                     b.HasIndex("WORD_IDId");
 
-                    b.ToTable("WordExercises", (string)null);
+                    b.ToTable("WordExercises");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.Exercise", b =>
@@ -183,21 +181,6 @@ namespace quadrolingoAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("USER_ID");
-                });
-
-            modelBuilder.Entity("quadrolingoAPI.Models.User", b =>
-                {
-                    b.HasOne("quadrolingoAPI.Models.Language", "BASE_LANG")
-                        .WithMany()
-                        .HasForeignKey("BASE_LANGLANG_CODE");
-
-                    b.HasOne("quadrolingoAPI.Models.Language", "STUDY_LANG")
-                        .WithMany()
-                        .HasForeignKey("STUDY_LANGLANG_CODE");
-
-                    b.Navigation("BASE_LANG");
-
-                    b.Navigation("STUDY_LANG");
                 });
 
             modelBuilder.Entity("quadrolingoAPI.Models.UserWord", b =>
