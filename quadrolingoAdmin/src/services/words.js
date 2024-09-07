@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-import { fromBackend, toBackend } from '../utils/wordMapper';
+import { fromBackend, toBackend } from '../mappers/wordMapper';
 
 const baseUrl = 'http://localhost:5214/words';
 

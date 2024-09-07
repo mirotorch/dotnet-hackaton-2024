@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { fromBackend, toBackend } from '../utils/languageMapper';
+import { fromBackend, toBackend } from '../mappers/languageMapper';
 const baseUrl = 'http://localhost:5214/languages'; // Updated URL for fetching languages
 
 let token = null;

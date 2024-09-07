@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react'
 import Word from './components/Word'
 import WordForm from './components/WordForm'
 import WordUpdateForm from './components/WordUpdateForm'
+import LanguagesList from './components/LanguageList'
 
 import wordsService from './services/words'
 import languagesService from './services/languages'
-import LanguagesList from './components/LanguageList'
+import usersService from './services/users'
+
 
 const App = () => {
   const [words, setWords] = useState([])
@@ -14,6 +16,9 @@ const App = () => {
   const [wordToEdit, setWordToEdit] = useState(null);
   const [viewLanguages, setViewLanguages] = useState(false); // State to toggle between words and languages
   const [viewProfile, setViewProfile] = useState(false); // State to toggle between sections and user profile
+  const [username, setUsername] = useState(''); // State to store the username
+  const [userResults, setUserResults] = useState([]); // State to store the search results
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null); // Store the selected user profile
 
   // Fetch words from the API
   useEffect(() => {
@@ -29,6 +34,21 @@ const App = () => {
       setLanguages(initialLanguages);
     });
   }, []);
+
+  useEffect(() => {
+    if (username) {
+      // Call the API every time the username is updated
+      usersService.getUsersByName(username)
+        .then((results) => {
+          setUserResults(results);
+        })
+        .catch((error) => {
+          console.error('Error fetching users:', error);
+        });
+    } else {
+      setUserResults([]); // Clear results if no username is provided
+    }
+  }, [username]);
 
   const updateWord = async (updatedWord) => {
     try {
@@ -46,9 +66,22 @@ const App = () => {
     }
   };
 
-  const deleteWord = async (newWord) => {
-    console.log('word deleted', newWord);
-  }
+  const deleteWord = async (wordId) => {
+    try {
+      // Call the remove method from wordsService
+      await wordsService.remove(wordId);
+      console.log(wordId)
+  
+      // Update the words
+      const updatedWords = await wordsService.getAll();
+      setWords(updatedWords);
+  
+      console.log(`Word with ID ${wordId} successfully deleted`);
+    } catch (error) {
+      console.error(`Error deleting word with ID ${wordId}:`, error);
+      alert('Failed to delete the word. Please try again.');
+    }
+  };
 
   const addWord = async (newWord) => {
     try {
@@ -98,9 +131,24 @@ const App = () => {
     setViewProfile(false); // Hide profile section
   };
 
-  const handleViewProfile = () => {
+  const handleFindUsers = () => {
     setViewLanguages(false);
     setViewProfile(true); // Show profile section
+  };
+
+  const handleBackToUsersSearch = () => {
+    setSelectedUserProfile(null); // Clear the selected profile and show the search again
+  }
+
+  const handleViewUserProfile = async (userId) => {
+    try {
+      const userProfile = await usersService.getUserProfileById(userId);
+      console.log('User Profile:', userProfile);
+      setSelectedUserProfile(userProfile); // Store the fetched user profile in state
+      // You can set the user profile in state and render it in the UI
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
   };
 
   return (
@@ -108,18 +156,57 @@ const App = () => {
       {/* Navigation buttons for switching between sections */}
       <button onClick={handleViewLanguages}>View Languages</button>
       <button onClick={handleViewWords}>View Words</button>
-      <button onClick={handleViewProfile}>View Profile</button>
+      <button onClick={handleFindUsers}>Find users</button>
 
       {/* Conditional rendering for the User Profile section */}
       {viewProfile ? (
         <div>
-          <h2>User Profile</h2>
-          {/* Render user profile section here */}
-          <form>
-            <label>Find User by Username:</label>
-            <input type="text" placeholder="Enter username" />
-            <button type="submit">Find User</button>
-          </form>
+          
+
+          {/* If no profile is selected, show the search form */}
+          {!selectedUserProfile ? (
+            <div>
+              <h2>Find Users</h2>
+              <form>
+                <label>Find User by Username:</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter username"
+                />
+              </form>
+
+              <h3>User Results</h3>
+              <ul>
+                {userResults.length > 0 ? (
+                  userResults.map((user) => (
+                    <li key={user.id}>
+                      {user.username}
+                      <button onClick={() => handleViewUserProfile(user.id)}>
+                        View Profile
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <li>No users found</li>
+                )}
+              </ul>
+            </div>
+          ) : (
+            <div>
+              <h2>Profile details</h2>
+              <p>Name: {selectedUserProfile.first_name} {selectedUserProfile.last_name}</p>
+              <p>Username: {selectedUserProfile.username}</p>
+              <p>Telegram ID: {selectedUserProfile.telegram_id}</p>
+              <p>Chat ID: {selectedUserProfile.chat_id}</p>
+
+              <h3>Study information</h3>
+              <p>Base language: {selectedUserProfile.base_lang}</p>
+              <p>Study language: {selectedUserProfile.study_lang}</p>
+              <button onClick={handleBackToUsersSearch}>Back to Search</button>
+            </div>
+          )}
         </div>
       ) : viewLanguages ? (
         <LanguagesList languages={languages} onSubmit={addLanguage} />
@@ -142,7 +229,7 @@ const App = () => {
                   word={w.base}
                   wordLang={w.lang}
                   updateWord={() => handleUpdateWord(w)} // Click handler for updating a word
-                  deleteWord={() => deleteWord(w)} // Click handler for deleting a word
+                  deleteWord={() => deleteWord(w.id)} // Click handler for deleting a word
                 />
               ))}
 
