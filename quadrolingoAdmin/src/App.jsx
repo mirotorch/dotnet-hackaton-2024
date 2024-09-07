@@ -57,14 +57,14 @@ const App = () => {
   const updateWord = async (updatedWord) => {
     try {
       // Call wordsService to update the word
-      const returnedWord = await wordsService.update(updatedWord);
+      await wordsService.update(updatedWord);
       
       // Update the state with the updated word
-      setWords(words.map(w => (w.id === returnedWord.id ? returnedWord : w)));
+      setWords(words.map(w => (w.id === updatedWord.id ? updatedWord : w)));
 
       // Reset the wordToEdit state to hide the update form
       setWordToEdit(null);
-      console.log('Word successfully updated:', returnedWord);
+      console.log('Word successfully updated:', updatedWord);
     } catch (error) {
       console.error('Error updating word:', error);
     }
@@ -107,12 +107,17 @@ const App = () => {
 
   const addLanguage = async (newLanguage) => {
     try {
-      setLanguages((prevLanguages) => [...prevLanguages, newLanguage]); // Update languages state with the new language
+      // Call the service to create the new language on the backend
       const returnedLanguage = await languagesService.create(newLanguage);
+      
+      // Only update the local state if the API call succeeds
+      setLanguages((prevLanguages) => [...prevLanguages, returnedLanguage]);
+      
       console.log('Language successfully added:', returnedLanguage);
     } catch (error) {
+      // Log the error and rethrow it so it can be handled in the component
       console.error('Error adding language:', error);
-      alert('Failed to add the language. Please try again.');
+      throw error; // Ensure the error is thrown so it's caught in LanguagesList
     }
   };
 

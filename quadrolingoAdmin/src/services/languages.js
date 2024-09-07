@@ -29,7 +29,7 @@ const create = async (newObject) => {
     const response = await axios.post(baseUrl, toBackend(newObject), config);
     return fromBackend(response.data);
   } catch (error) {
-    console.error('Error creating a new language:', error); 
+    console.error('Error creating a new language:', error);
     throw error;
   }
 };
