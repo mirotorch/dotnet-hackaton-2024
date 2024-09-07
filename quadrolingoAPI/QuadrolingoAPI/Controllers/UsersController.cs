@@ -33,7 +33,7 @@ namespace quadrolingoAPI.Controllers
                          where user.USERNAME.Contains(name)
                          select user).ToList();
             }
-            return await _context.Users.ToListAsync();
+            return result;
         }
 
         // GET: api/Users/5
