@@ -16,9 +16,9 @@ namespace quadrolingoBot
 		{
 			return new InlineKeyboardButton[] 
 			{
-				InlineKeyboardButton.WithCallbackData("Russian", "lang_ru"),
-				InlineKeyboardButton.WithCallbackData("English", "lang_en"),
-				InlineKeyboardButton.WithCallbackData("German", "lang_de"),
+				InlineKeyboardButton.WithCallbackData("🏳️‍🌈Russian", "lang_ru"),
+				InlineKeyboardButton.WithCallbackData("🇺🇸🇬🇧English", "lang_en"),
+				InlineKeyboardButton.WithCallbackData("🇩🇪German", "lang_de"),
 			};
 		}
 
@@ -48,6 +48,11 @@ namespace quadrolingoBot
 				new WordModel { Word = "elephant", Translation = "слон", Correct = false },
 				new WordModel { Word = "water", Translation = "вода", Correct = false },
 			};
+		}
+
+		public bool UserExists(long userId)
+		{
+			return true;
 		}
 
 		public List<string> GetVariants(int count, string word, long userId)

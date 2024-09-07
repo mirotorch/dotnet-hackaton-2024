@@ -26,7 +26,14 @@ internal class QuadrolingoBot
 		bot = new TelegramBotClient(token);
 		bot.OnUpdate += OnUpdate;
 		bot.OnMessage += OnMessage;
+		var commands = new List<BotCommand>
+		{
+			new BotCommand { Command = "/start", Description = "Start the bot" },
+			new BotCommand { Command = "/menu", Description = "Show the menu" },
+		};
+		Task.Run(() => bot.SetMyCommandsAsync(commands));
 	}
+
 
 	private async Task OnUpdate(Update update)
 	{
@@ -51,6 +58,17 @@ internal class QuadrolingoBot
 			});
 			await bot.SendTextMessageAsync(msg.Chat.Id, MessageConsts.StartMessage, replyMarkup: new InlineKeyboardMarkup(
 			dbManager.GetLanguageButtons()));
+		}
+		else if (msg.Text.Contains("/menu"))
+		{
+			if (dbManager.UserExists(msg.From.Id))
+			{
+				await ShowMenuAsync(msg.Chat.Id, msg.From.Id);
+			}
+			else
+			{
+				await bot.SendTextMessageAsync(msg.Chat.Id, "You need to start with /start command");
+			}
 		}
 		else
 		{
@@ -96,6 +114,7 @@ internal class QuadrolingoBot
 	{
 		double userCorrectness = (double)correct / total;
 		double difference = userCorrectness - averageCorrectness;
+		if (difference == 0) return " Your result is equal to your average.";
 		string comparison = difference > 0 ? "better" : "worse";
 		double percentage = Math.Abs(difference) * 100;
 		return $" Your result is {(int)percentage}% {comparison} than your average.";
@@ -107,13 +126,13 @@ internal class QuadrolingoBot
 		if (!wordsBuffer.TryGetValue(query.Message.Chat.Id, out WordCollection words))
 		{
 			// user wants to start exercise without learning new words
-			words = new WordExerciseCollection(dbManager.GetLearnedWords(10));
+			words = new WordExerciseCollection(dbManager.GetLearnedWords(WordsPerPage));
 			wordsBuffer.Add(query.Message.Chat.Id, words);
 		}
 		else
 		{
 			// add some learned words to repeat them
-			var learnedWords = dbManager.GetLearnedWords(5);
+			var learnedWords = dbManager.GetLearnedWords(2);
 			wordsBuffer[query.Message.Chat.Id] = new WordExerciseCollection(learnedWords.Concat(words.list).ToList());
 		}
 		await AskAQuestionAsync(query.Message.Chat.Id, query.From.Id);
@@ -125,7 +144,10 @@ internal class QuadrolingoBot
 		{
 			var word = words[words.Current];
 			var variants = dbManager.GetVariants(2, word.Translation, userId).Append(word.Translation).ToArray();
-			await bot.SendTextMessageAsync(chatId, word.GetToGuess(), replyMarkup: GetExerciseMarkup(variants), parseMode: ParseMode.Html);
+			var wordOrder = words.Current == 0 ? "first" : words.Current == words.Count ? "last" : "next";
+			string text = $"🔤 The {wordOrder} word is {word.GetToGuess()}.\nSelect the translation option or write it manually.";
+
+			await bot.SendTextMessageAsync(chatId, text, replyMarkup: GetExerciseMarkup(variants), parseMode: ParseMode.Html);
 		}
 	}
 
@@ -323,15 +345,15 @@ internal class QuadrolingoBot
 		{
 			new []
 			{
-				InlineKeyboardButton.WithCallbackData("Learn new words", "learn_words"),
+				InlineKeyboardButton.WithCallbackData("Learn new words 📖", "learn_words"),
 			},
 			new []
 			{
-				InlineKeyboardButton.WithCallbackData("Start excercise", "start_excercise"),
+				InlineKeyboardButton.WithCallbackData("Start excercise 📝", "start_excercise"),
 			},
 			new []
 			{
-				InlineKeyboardButton.WithCallbackData("Show known words", "show_words"),
+				InlineKeyboardButton.WithCallbackData("Show your known words 📁", "show_words"),
 			},
 		});
 	}
