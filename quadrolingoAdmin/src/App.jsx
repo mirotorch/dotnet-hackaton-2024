@@ -6,6 +6,7 @@ import WordUpdateForm from './components/WordUpdateForm'
 
 import wordsService from './services/words'
 import languagesService from './services/languages'
+import LanguagesList from './components/LanguageList'
 
 const App = () => {
   const [words, setWords] = useState([])
@@ -67,6 +68,17 @@ const App = () => {
     }
   };
 
+  const addLanguage = async (newLanguage) => {
+    try {
+      setLanguages((prevLanguages) => [...prevLanguages, newLanguage]); // Update languages state with the new language
+      const returnedLanguage = await languagesService.create(newLanguage);
+      console.log('Language successfully added:', returnedLanguage);
+    } catch (error) {
+      console.error('Error adding language:', error);
+      alert('Failed to add the language. Please try again.');
+    }
+  };
+
   // Function to handle updating an existing word
   const handleUpdateWord = (word) => {
     setWordToEdit(word); // Set the word to be updated, which will show the update form
@@ -110,10 +122,7 @@ const App = () => {
           </form>
         </div>
       ) : viewLanguages ? (
-        <div>
-          <h2>Languages Section</h2>
-          {/* Render the languages section here */}
-        </div>
+        <LanguagesList languages={languages} onSubmit={addLanguage} />
       ) : (
         <div>
           <h2>Words</h2>
