@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using quadrolingoBot.BotModels;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -95,7 +96,8 @@ internal class QuadrolingoBot
 						int correct = wec.GetCorrectCount();
 						string result = correct == wec.Count ? "Congratulations! You have successfully completed the exercise." : $"You have completed the exercise. You have {correct} correct answers out of {wec.Count}.";
 						double averageCorrectness = dbManager.GetAverageCorrectness(msg.From.Id);
-						string toAverage = GetAverageComparison(correct, wec.Count, averageCorrectness);
+
+						string toAverage = averageCorrectness >= 0 ? GetAverageComparison(correct, wec.Count, averageCorrectness) : string.Empty;
 						await bot.SendTextMessageAsync(msg.Chat.Id, result + toAverage, replyMarkup: new ReplyKeyboardRemove());
 						dbManager.SaveExerciseResults(msg.From.Id, wec);
 						wordsBuffer.Remove(msg.Chat.Id, out _);
@@ -162,7 +164,7 @@ internal class QuadrolingoBot
 
 	async Task StartLearningWordsAsync(CallbackQuery query)
 	{
-		WordCollection wordCollection = new(dbManager.GetNewWords());
+		WordCollection wordCollection = new(dbManager.GetNewWords(WordsPerPage));
 		wordsBuffer.Add(query.Message.Chat.Id, wordCollection);
 		var message = await bot.SendTextMessageAsync(query.Message.Chat.Id, wordCollection[0].GetToLearn(), replyMarkup: GetMemorizingMarkup(MarkupArrows.Next));
 		wordCollection.MessageId = message.MessageId;

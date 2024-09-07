@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("quadrolingoAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b01cfe8532cc04d824664e229cf584239952395c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5be047f45515239cbc6081a2ab0a66c969fa1d33")]
 [assembly: System.Reflection.AssemblyProductAttribute("quadrolingoAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("quadrolingoAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

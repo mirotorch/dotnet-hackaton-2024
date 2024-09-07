@@ -24,7 +24,7 @@ namespace quadrolingoAPI.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers(string? name)
+        public async Task<ActionResult<IEnumerable<FormattedUser>>> GetUsers(string? name)
         {
             var result = await _context.Users.ToListAsync();
             if (name != null)
@@ -33,12 +33,22 @@ namespace quadrolingoAPI.Controllers
                          where user.USERNAME.Contains(name)
                          select user).ToList();
             }
-            return result;
+            List<FormattedUser> users = new List<FormattedUser>();  
+            foreach (var user in result)
+            {
+                FormattedUser e = new FormattedUser(user);
+                var lang = await _context.Languages.FindAsync(user.BASE_LANG);
+                e.BASE_LANG = lang.LANG_ENG_NAME;
+                lang = await _context.Languages.FindAsync(user.STUDY_LANG);
+                e.STUDY_LANG = lang.LANG_ENG_NAME;
+                users.Add(e);
+            }
+            return users;
         }
 
         // GET: api/Users/5
         [HttpGet("{id}/profile")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<ActionResult<FormattedUser>> GetUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
 
@@ -47,7 +57,13 @@ namespace quadrolingoAPI.Controllers
                 return NotFound();
             }
 
-            return user;
+            FormattedUser formattedUser = new FormattedUser(user);
+            var lang = await _context.Languages.FindAsync(user.BASE_LANG);
+            formattedUser.BASE_LANG = lang.LANG_ENG_NAME;
+            lang = await _context.Languages.FindAsync(user.STUDY_LANG);
+            formattedUser.STUDY_LANG = lang.LANG_ENG_NAME;
+
+            return formattedUser;
         }
 
         [HttpGet("{id}/known_words")]
