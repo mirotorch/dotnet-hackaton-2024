@@ -42,5 +42,35 @@ const getUserProfileById = async (id) => {
   }
 };
 
+const getUserKnownWords = async (id) => {
+  const config = {
+    headers: { Authorization: token },
+  };
 
-export default { setToken, getUsersByName, getUserProfileById };
+  try {
+    const response = await axios.get(`${baseUrl}/${id}/known_words`, config);
+    console.log('User known words response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user known words:', error);
+    throw error;
+  }
+}
+
+const getProgress = async (id) => {
+  const config = {
+    headers: { Authorization: token },
+  };
+
+  try {
+    const response = await axios.get(`${baseUrl}/${id}/progress`, config);
+    console.log('User progress response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user progress:', error);
+    throw error;
+  }
+}
+
+
+export default { setToken, getUsersByName, getUserProfileById, getUserKnownWords, getProgress };

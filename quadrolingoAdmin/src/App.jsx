@@ -15,10 +15,14 @@ const App = () => {
   const [languages, setLanguages] = useState([])
   const [wordToEdit, setWordToEdit] = useState(null);
   const [viewLanguages, setViewLanguages] = useState(false); // State to toggle between words and languages
-  const [viewProfile, setViewProfile] = useState(false); // State to toggle between sections and user profile
+  const [viewUserSearch, setViewUserSearch] = useState(false); // State to toggle between sections and user profile
   const [username, setUsername] = useState(''); // State to store the username
   const [userResults, setUserResults] = useState([]); // State to store the search results
   const [selectedUserProfile, setSelectedUserProfile] = useState(null); // Store the selected user profile
+  const [userKnownWords, setUserKnownWords] = useState([]); // Store the known words of the user
+  const [userStudyStatistics, setUserStudyStatistics] = useState([]); // Store the study statistics
+  const [showKnownWords, setShowKnownWords] = useState(false); // State to toggle the display of known words
+  const [showStudyStatistics, setShowStudyStatistics] = useState(false); // State to toggle the display of study statistics
 
   // Fetch words from the API
   useEffect(() => {
@@ -123,17 +127,17 @@ const App = () => {
 
   const handleViewLanguages = () => {
     setViewLanguages(true);
-    setViewProfile(false); // Hide profile section
+    setViewUserSearch(false); // Hide profile section
   };
 
   const handleViewWords = () => {
     setViewLanguages(false);
-    setViewProfile(false); // Hide profile section
+    setViewUserSearch(false); // Hide profile section
   };
 
   const handleFindUsers = () => {
     setViewLanguages(false);
-    setViewProfile(true); // Show profile section
+    setViewUserSearch(true); // Show profile section
   };
 
   const handleBackToUsersSearch = () => {
@@ -151,6 +155,36 @@ const App = () => {
     }
   };
 
+   // Handler for toggling the display of known words
+   const handleViewUserKnownWords = () => {
+    setShowKnownWords((prev) => !prev);
+    setShowStudyStatistics(false); // Hide study statistics when viewing known words
+
+    // call db
+    usersService.getUserKnownWords(selectedUserProfile.id)
+      .then((knownWords) => {
+        setUserKnownWords(knownWords);
+      })
+      .catch((error) => {
+        console.error('Error fetching known words:', error);
+      });
+  };
+
+  // Handler for toggling the display of study statistics
+  const handleViewUserStudyStatistics = () => {
+    setShowStudyStatistics((prev) => !prev);
+    setShowKnownWords(false); // Hide known words when viewing study statistics
+
+    // call db
+    usersService.getProgress(selectedUserProfile.id)
+      .then((progress) => {
+        setUserStudyStatistics(progress);
+      })
+      .catch((error) => {
+        console.error('Error fetching study statistics:', error);
+      });
+  };
+
   return (
     <div>
       {/* Navigation buttons for switching between sections */}
@@ -159,10 +193,8 @@ const App = () => {
       <button onClick={handleFindUsers}>Find users</button>
 
       {/* Conditional rendering for the User Profile section */}
-      {viewProfile ? (
+      {viewUserSearch ? (
         <div>
-          
-
           {/* If no profile is selected, show the search form */}
           {!selectedUserProfile ? (
             <div>
@@ -205,6 +237,40 @@ const App = () => {
               <p>Base language: {selectedUserProfile.base_lang}</p>
               <p>Study language: {selectedUserProfile.study_lang}</p>
               <button onClick={handleBackToUsersSearch}>Back to Search</button>
+              <button onClick={handleViewUserKnownWords}>View Known Words</button>
+              <button onClick={handleViewUserStudyStatistics}>View Study Statistics</button>
+
+              {/* Conditionally render the known words section */}
+              {showKnownWords && (
+                <div>
+                  <h3>Known Words</h3>
+                  <ul>
+                    {userKnownWords.length > 0 ? (
+                      userKnownWords.map((word, index) => (
+                        <li key={index}>{word}</li>
+                      ))
+                    ) : (
+                      <li>No known words available</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Conditionally render the study statistics section */}
+              {showStudyStatistics && (
+                <div>
+                  <h3>Study Statistics</h3>
+                  <ul>
+                    {userStudyStatistics.length > 0 ? (
+                      userStudyStatistics.map((stat, index) => (
+                        <li key={index}>{stat}</li>
+                      ))
+                    ) : (
+                      <li>No study statistics available</li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
