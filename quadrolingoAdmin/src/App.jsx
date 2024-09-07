@@ -11,6 +11,8 @@ const App = () => {
   const [words, setWords] = useState([])
   const [languages, setLanguages] = useState([])
   const [wordToEdit, setWordToEdit] = useState(null);
+  const [viewLanguages, setViewLanguages] = useState(false); // State to toggle between words and languages
+  const [viewProfile, setViewProfile] = useState(false); // State to toggle between sections and user profile
 
   // Fetch words from the API
   useEffect(() => {
@@ -22,6 +24,7 @@ const App = () => {
   // Fetch languages from the API
   useEffect(() => {
     languagesService.getAll().then(initialLanguages => {
+      console.log('initialLanguages:', initialLanguages);
       setLanguages(initialLanguages);
     });
   }, []);
@@ -73,32 +76,72 @@ const App = () => {
     setWordToEdit(null); // Cancel updating the word, returning to normal state
   };
 
+  const handleViewLanguages = () => {
+    setViewLanguages(true);
+    setViewProfile(false); // Hide profile section
+  };
+
+  const handleViewWords = () => {
+    setViewLanguages(false);
+    setViewProfile(false); // Hide profile section
+  };
+
+  const handleViewProfile = () => {
+    setViewLanguages(false);
+    setViewProfile(true); // Show profile section
+  };
+
   return (
     <div>
-      <h2>Words</h2>
-      {/* If a word is being updated, show the update form, otherwise show the list */}
-      {wordToEdit ? (
-        <WordUpdateForm
-          word={wordToEdit}
-          languages={languages}
-          onSubmit={updateWord}
-          onCancel={handleCancelUpdate} // Cancel button handler
-        />
-      ) : (
-        <>
-          {words.map((w) => (
-            <Word
-              key={w.id}
-              word={w.base}
-              wordLang={w.lang}
-              updateWord={() => handleUpdateWord(w)} // Click handler for updating a word
-              deleteWord={() => deleteWord(w)} // Click handler for deleting a word
-            />
-          ))}
+      {/* Navigation buttons for switching between sections */}
+      <button onClick={handleViewLanguages}>View Languages</button>
+      <button onClick={handleViewWords}>View Words</button>
+      <button onClick={handleViewProfile}>View Profile</button>
 
-          <h2>Add Word</h2>
-          <WordForm languages={languages} onSubmit={addWord} />
-        </>
+      {/* Conditional rendering for the User Profile section */}
+      {viewProfile ? (
+        <div>
+          <h2>User Profile</h2>
+          {/* Render user profile section here */}
+          <form>
+            <label>Find User by Username:</label>
+            <input type="text" placeholder="Enter username" />
+            <button type="submit">Find User</button>
+          </form>
+        </div>
+      ) : viewLanguages ? (
+        <div>
+          <h2>Languages Section</h2>
+          {/* Render the languages section here */}
+        </div>
+      ) : (
+        <div>
+          <h2>Words</h2>
+          {/* If a word is being updated, show the update form, otherwise show the list */}
+          {wordToEdit ? (
+            <WordUpdateForm
+              word={wordToEdit}
+              languages={languages}
+              onSubmit={updateWord}
+              onCancel={handleCancelUpdate} // Cancel button handler
+            />
+          ) : (
+            <>
+              {words.map((w) => (
+                <Word
+                  key={w.id}
+                  word={w.base}
+                  wordLang={w.lang}
+                  updateWord={() => handleUpdateWord(w)} // Click handler for updating a word
+                  deleteWord={() => deleteWord(w)} // Click handler for deleting a word
+                />
+              ))}
+
+              <h2>Add Word</h2>
+              <WordForm languages={languages} onSubmit={addWord} />
+            </>
+          )}
+        </div>
       )}
     </div>
   )
