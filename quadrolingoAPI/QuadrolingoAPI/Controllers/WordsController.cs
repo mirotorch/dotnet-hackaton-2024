@@ -112,20 +112,19 @@ namespace quadrolingoAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Word>> PostWord(Word word)
         {
-            
+            var check = from w in _context.Words
+                        where w.WORD_BASE == word.WORD_BASE
+                        select w;
+            if (check.Any())
+            {
+                return NoContent();
+            }
             _context.Words.Add(word);
 
             var translations = JsonSerializer.Deserialize<Dictionary<string, string[]>>(word.WORD_TRANSLATION);
 
             foreach (var item in translations)
             {
-                var check = from w in _context.Words
-                                 where w == word
-                                 select w;
-                if (check.Any())
-                {
-                    return BadRequest();
-                }
                 var lang = await _context.Languages.FindAsync(item.Key);
                 var words = await _context.Words.ToListAsync();
                 if (lang == null)
