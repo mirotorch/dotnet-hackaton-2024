@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const WordForm = ({ languages, onSubmit }) => {
-  const [wordLang, setWordLang] = useState('')
-  const [newWord, setNewWord] = useState('')
-  const [translations, setTranslations] = useState([{ text: '', lang: '' }]);
+const WordUpdateForm = ({ word, languages, onSubmit, onCancel }) => {
+  const [newWord, setNewWord] = useState(word.base);
+  const [wordLang, setWordLang] = useState(word.lang);
+  const [translations, setTranslations] = useState([]);
 
+  // Initialize the translations from the word's existing data
+  useEffect(() => {
+    const translationList = Object.entries(word.translations).flatMap(([lang, texts]) => {
+      return texts.map(text => ({ lang, text }));
+    });
+    setTranslations(translationList);
+  }, [word]);
 
-  const handleAddWord = async (e) => {
-    e.preventDefault()
+  const handleUpdateWord = async (e) => {
+    e.preventDefault();
 
     if (!newWord || !wordLang) {
       alert('Please provide a word and select a language');
@@ -22,27 +29,21 @@ const WordForm = ({ languages, onSubmit }) => {
       return acc;
     }, {});
 
-    const wordToAdd = {
+    const updatedWord = {
+      ...word,
       base: newWord,
       lang: wordLang,
-      translations: groupedTranslations
+      translations: groupedTranslations,
     };
 
-    console.log('created word', wordToAdd);
-
-    onSubmit(wordToAdd);
-
-    // Reset form after submission
-    setNewWord('');
-    setWordLang('');
-    setTranslations([{ lang: '', text: '' }]);
-  }
+    onSubmit(updatedWord); // Send the updated word to the parent
+  };
 
   // Function to handle updating a translation's text or language
   const handleTranslationChange = (index, field, value) => {
-    const updatedTranslations = translations.map((translation, i) => (
+    const updatedTranslations = translations.map((translation, i) =>
       i === index ? { ...translation, [field]: value } : translation
-    ));
+    );
     setTranslations(updatedTranslations);
   };
 
@@ -58,12 +59,12 @@ const WordForm = ({ languages, onSubmit }) => {
   };
 
   return (
-    <form onSubmit={handleAddWord}>
+    <form onSubmit={handleUpdateWord}>
       <input
         type="text"
         value={newWord}
         onChange={(e) => setNewWord(e.target.value)}
-        placeholder="Add a new word"
+        placeholder="Update the word"
       />
 
       <select
@@ -104,9 +105,10 @@ const WordForm = ({ languages, onSubmit }) => {
 
       <button type="button" onClick={handleAddTranslation}>Add Translation</button>
 
-      <button type="submit">Add Word</button>
+      <button type="submit">Update Word</button>
+      <button type="button" onClick={onCancel}>Go back</button>
     </form>
-  )
-}
+  );
+};
 
-export default WordForm
+export default WordUpdateForm;

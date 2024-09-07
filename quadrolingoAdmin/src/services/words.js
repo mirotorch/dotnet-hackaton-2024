@@ -1,4 +1,7 @@
 import axios from 'axios'
+
+import { fromBackend, toBackend } from '../utils/wordMapper';
+
 const baseUrl = 'http://localhost:3001/words';
 
 let token = null
@@ -9,7 +12,7 @@ const setToken = newToken => {
 const getAll = async () => {
   try {
     const response = await axios.get(baseUrl)
-    return response.data
+    return response.data.map(fromBackend)
   } catch (error) {
     console.error('Error fetching words:', error)
     throw error
@@ -22,10 +25,10 @@ const create = async newObject => {
   }
 
   try {
-    const response = await axios.post(baseUrl, newObject, config)
-    return response.data
+    const response = await axios.post(baseUrl, toBackend(newObject), config)
+    return fromBackend(response.data)
   } catch (error) {
-    console.error('Error fetching words:', error)
+    console.error('Error creating a word:', error)
     throw error
   }
 }
@@ -34,15 +37,24 @@ const update = async newObject => {
   const config = {
     headers: { Authorization: token },
   }
-  const response = await axios.put(`${baseUrl}/${newObject.id}`, newObject, config)
-  return response.data
+  const url = `${baseUrl}/${newObject.id}`
+  console.log('request url:', url)
+  try {
+    const response = await axios.put(url, toBackend(newObject), config)
+    return fromBackend(response.data)
+  } catch (error) {
+    console.error('Error updating a word', error)
+    throw error
+  }
 }
 
 const remove = async id => {
   const config = {
     headers: { Authorization: token },
   }
-  const response = await axios.delete(`${baseUrl}/${id}`, config)
+  const url = `${baseUrl}/${id}`
+  console.log('request url:', url)
+  const response = await axios.delete(url, config)
   return response.data
 }
 
