@@ -14,7 +14,7 @@ namespace quadrolingoBot
 
 		public InlineKeyboardButton[] GetLanguageButtons()
 		{
-			return new InlineKeyboardButton[] // tmp
+			return new InlineKeyboardButton[] 
 			{
 				InlineKeyboardButton.WithCallbackData("Russian", "lang_ru"),
 				InlineKeyboardButton.WithCallbackData("English", "lang_en"),
@@ -33,8 +33,16 @@ namespace quadrolingoBot
 			};
 		}
 
-		public List<WordModel> GetLearnedWords(int count)
+		public List<WordModel> GetLearnedWords(int count, int startFrom = -1) // -1 means random
 		{
+			if (startFrom > 0)
+			{
+				return new List<WordModel>
+				{
+					new WordModel { Word = "apple", Translation = "яблоко", Correct = true },
+					new WordModel { Word = "banana", Translation = "банан", Correct = true },
+				};
+			}
 			return new List<WordModel>
 			{
 				new WordModel { Word = "elephant", Translation = "слон", Correct = false },
@@ -45,6 +53,32 @@ namespace quadrolingoBot
 		public List<string> GetVariants(int count, string word, long userId)
 		{
 			return ["слон", "вода"];
+		}
+
+		public int GetPageCount(long userId, int wordsPerPage) { return 4; }
+
+		public int GetWordCount(long userId)
+		{
+			return 4;
+		}
+
+		/// <summary>
+		/// We update both UserWord and WordExercise here to avoid complications with word repetition in <see cref="GetLearnedWords(int)"/>
+		/// </summary>
+		public void SaveExerciseResults(long userId, WordExerciseCollection words)
+		{
+			//using (SQLiteConnection connection = new SQLiteConnection("Data Source=quadrolingo.db"))
+			//{
+			//	connection.Open();
+			//	using (SQLiteCommand command = new SQLiteCommand(connection))
+			//	{
+			//		command.CommandText = "INSERT INTO Results (UserId, WordId, Correct) VALUES (@UserId, @WordId, @Correct)";
+			//		command.Parameters.AddWithValue("@UserId", userId);
+			//		command.Parameters.AddWithValue("@WordId", 1);
+			//		command.Parameters.AddWithValue("@Correct", true);
+			//		command.ExecuteNonQuery();
+			//	}
+			//}
 		}
 
 		public double GetAverageCorrectness(long userId)
