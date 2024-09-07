@@ -14,8 +14,14 @@ namespace quadrolingoBot
 
 		public static string InitialWordSetMessage = "Excellent! Now let's start with some basic words. When you're sure you've memorized them, click “start exercise” to test your knowledge.";
 
+		public static string StartExerciseMessage = "Great! Let's start the exercise. You need to translate the word into the selected language.";
 
-		// callback prefixes
+		public static string CorrectAnswerMessage = "✅ Correct!";
+
+		public static string WrongAnswerMessage = "❌ Incorrect! The correct translation is ";
+
+		public static string EndExerciseMessage = "You have completed the exercise.";
+
 		public static string CallbackPrefixLanguage = "lang_";
 	}
 }

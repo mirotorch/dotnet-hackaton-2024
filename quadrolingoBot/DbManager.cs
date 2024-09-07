@@ -33,15 +33,23 @@ namespace quadrolingoBot
 			};
 		}
 
-		public List<WordModel> GetLearnedWords()
+		public List<WordModel> GetLearnedWords(int count)
 		{
 			return new List<WordModel>
 			{
-				new WordModel { Word = "apple", Translation = "яблоко", Correct = false },
-				new WordModel { Word = "banana", Translation = "банан", Correct = false },
-				new WordModel { Word = "cherry", Translation = "вишня", Correct = false },
-				new WordModel { Word = "grape", Translation = "виноград", Correct = false },
+				new WordModel { Word = "elephant", Translation = "слон", Correct = false },
+				new WordModel { Word = "water", Translation = "вода", Correct = false },
 			};
+		}
+
+		public List<string> GetVariants(int count, string word, long userId)
+		{
+			return ["слон", "вода"];
+		}
+
+		public double GetAverageCorrectness(long userId)
+		{
+			return 0.5;
 		}
 
 		public void AddUser(UserModel user)
